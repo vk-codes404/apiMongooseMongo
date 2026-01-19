@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Consulta CEP - ViaCEP</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        padding: 16px;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      input {
+        padding: 6px 8px;
+      }
+      button {
+        padding: 6px 10px;
+        cursor: pointer;
+      }
+      pre {
+        background: #f6f8fa;
+        padding: 12px;
+        border-radius: 6px;
+        overflow: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="row">
+      <label for="cep">CEP:</label>
+      <input
+        id="cep"
+        type="text"
+        placeholder="Ex.: 44073500 ou 44073-500"
+        autocomplete="off"
+      />
+      <button id="ping">Buscar</button>
+    </div>
+
+    <pre id="out">Aguardando consulta…</pre>
+
+    <script>
+      const $cep = document.getElementById("cep");
+      const $btn = document.getElementById("ping");
+      const $out = document.getElementById("out");
+
+      async function consultarCEP() {
+        // 1) Normaliza o CEP (mantém só dígitos)
+        const cep = ($cep.value || "").replace(/\\D/g, "");
+        if (cep.length !== 8) {
+          $out.textContent = "Informe um CEP válido com 8 dígitos.";
+          $cep.focus();
+          return;
+        }
+
+        // 2) Mostra "carregando"
+        $out.textContent = "Consultando...";
+
+        try {
+          const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+          if (!res.ok) throw new Error("HTTP " + res.status);
+
+          const data = await res.json();
+
+          // 3) Trata CEP inexistente (ViaCEP retorna { erro: true })
+          if (data.erro) {
+            $out.textContent = "CEP não encontrado.";
+            return;
+          }
+
+          // 4) Exibe o JSON bonitinho
+          $out.textContent = JSON.stringify(data, null, 2);
+        } catch (err) {
+          $out.textContent = "Erro: " + err.message;
+        }
+      }
+
+      // Clique no botão
+      $btn.addEventListener("click", consultarCEP);
+
+      // Enter no input também dispara a busca
+      $cep.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") consultarCEP();
+      });
+    </script>
+  </body>
+</html>
